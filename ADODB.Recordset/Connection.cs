@@ -8,11 +8,14 @@ namespace ADODB
 {
     public class Connection
     {
+        //For future update
+        public System.Data.IDbConnection innerConnection { get; private set; }
+
         public string Provider { get; set; }
 
-        public void Open(string v)
+        public void Open(string stringConnection)
         {
-            throw new NotImplementedException();
+            innerConnection = new System.Data.SqlClient.SqlConnection(stringConnection);        
         }
     }
 }
