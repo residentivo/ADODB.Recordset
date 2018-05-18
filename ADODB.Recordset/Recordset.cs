@@ -15,12 +15,28 @@ namespace ADODB
 
         public System.Data.IDataReader innerReader { get; private set; }
 
+        public bool _EOF = true;
+        public bool EOF
+        {
+            get
+            {
+                OpenReader();
+                
+                return _EOF;
+            }
+        }
+
         //For future alteration, this going to be the Type injector
         private void CreateCommand(string sqlCommand)
         {
             innerCommand = new System.Data.SqlClient.SqlCommand(sqlCommand, (SqlConnection)innerADOConnection.innerConnection);
         }
-
+        //Update reader and flag
+        private bool ReaderRead()
+        {
+            _EOF = !innerReader.Read();
+            return !_EOF;
+        }
         private void OpenReader()
         {
             if (innerReader != null && !innerReader.IsClosed)
@@ -39,8 +55,9 @@ namespace ADODB
 
             innerReader = innerCommand.ExecuteReader();
 
-            if (!innerReader.Read())
+            if (!ReaderRead())
                 throw new InvalidOperationException("Reader not executed.");
+
         }
 
         public void Open(string sqlCommand, ADODB.Connection connection)
@@ -80,6 +97,12 @@ namespace ADODB
             }
 
             yield break;
+        }
+
+        public void MoveNext()
+        {
+            ReaderRead();
+            //_EOF = !innerReader.Read();
         }
     }
 }
