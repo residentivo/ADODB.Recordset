@@ -11,28 +11,75 @@ namespace ADODB
     {
         private ADODB.Connection innerADOConnection = null;
 
+        public System.Data.IDbCommand innerCommand { get; private set; }
+
         public System.Data.IDataReader innerReader { get; private set; }
 
-        public void Open(string sqlCommand)
+        //For future alteration, this going to be the Type injector
+        private void CreateCommand(string sqlCommand)
         {
-            //throw new NotImplementedException();
+            innerCommand = new System.Data.SqlClient.SqlCommand(sqlCommand, (SqlConnection)innerADOConnection.innerConnection);
+        }
+
+        private void OpenReader()
+        {
+            if (innerReader != null && !innerReader.IsClosed)
+                return;
+
+            if (innerADOConnection == null && innerADOConnection.innerConnection == null)
+                throw new NullReferenceException("Connection not Initialized.");
+
+            innerADOConnection.innerConnection.Open();
+
+            if (innerADOConnection.innerConnection.State == System.Data.ConnectionState.Closed || innerADOConnection.innerConnection.State == System.Data.ConnectionState.Broken)
+                throw new InvalidOperationException("Connection is not in correte State.");
+
+            if (innerCommand == null)
+                throw new NullReferenceException("Command not Initialized.");
+
+            innerReader = innerCommand.ExecuteReader();
+
+            if (!innerReader.Read())
+                throw new InvalidOperationException("Reader not executed.");
         }
 
         public void Open(string sqlCommand, ADODB.Connection connection)
         {
-            innerADOConnection = connection;
-            //throw new NotImplementedException();
-            CreateReader(sqlCommand);
+            if (connection != null || innerADOConnection == null)
+                innerADOConnection = connection;
+
+            CreateCommand(sqlCommand);
         }
 
-        private void CreateReader(string sqlCommand)
+        public RecordsetItem fields(int index)
         {
-            var cmd = new System.Data.SqlClient.SqlCommand(sqlCommand, (SqlConnection)innerADOConnection.innerConnection);
+            OpenReader();
 
-            if (cmd.Connection.State == System.Data.ConnectionState.Closed || cmd.Connection.State == System.Data.ConnectionState.Broken)
-                cmd.Connection.Open();
+            var item = new RecordsetItem(innerReader.GetName(index), innerReader[index]);
 
-            innerReader = cmd.ExecuteReader();
+            return item;
+        }
+        public RecordsetItem fields(string index)
+        {
+            OpenReader();
+
+            //Just to make sure 
+            var item = new RecordsetItem(innerReader.GetName(innerReader.GetOrdinal(index)), innerReader[index]);
+
+            return item;
+        }
+        public IEnumerable<RecordsetItem> fields()
+        {
+            OpenReader();
+
+            for (int i = 0; i < innerReader.FieldCount; i++)
+            {
+                var item = new RecordsetItem(innerReader.GetName(i), innerReader[i]);
+
+                yield return item;
+            }
+
+            yield break;
         }
     }
 }

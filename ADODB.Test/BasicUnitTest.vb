@@ -25,13 +25,13 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
 
         Dim conn As New ADODB.Connection
         'This would be ignored
-        conn.Provider = "Microsoft.Jet.OLEDB.4.0"
+        'conn.Provider = "Microsoft.Jet.OLEDB.4.0"
         'Required change for .NET and using of local database for now
         conn.Open(StringConnection)
 
         Assert.IsNotNull(conn.innerConnection)
-
-        Assert.AreEqual(conn.innerConnection.State, ConnectionState.Open)
+        'Connection is not open for default
+        Assert.AreEqual(conn.innerConnection.State, ConnectionState.Closed)
 
     End Sub
 
@@ -48,22 +48,44 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
         Dim rs As New ADODB.Recordset
         rs.Open("Select * from Movies", conn)
 
-        Assert.IsNotNull(rs.innerReader)
+        Assert.IsNotNull(rs.innerCommand)
 
     End Sub
     <TestMethod()> Public Sub CreateReadContents()
         '    Set conn=Server.CreateObject("ADODB.Connection")
         'conn.Provider="Microsoft.Jet.OLEDB.4.0"
         'conn.Open "c:/webdata/northwind.mdb"
-
         'Set rs=Server.CreateObject("ADODB.recordset")
         'rs.Open "Select * from Customers", conn
 
-        'For Each x In rs.fields
-        '  response.write(x.name)
-        '  response.write(" = ")
-        '  response.write(x.value)
-        'Next
+
+        Dim conn As New ADODB.Connection
+        conn.Open(StringConnection)
+
+        Dim rs As New ADODB.Recordset
+        rs.Open("Select id,Title,ReleaseDate from Movies", conn)
+
+        Dim index As Byte = 0
+
+        For Each x In rs.fields
+            Assert.IsNotNull(x)
+
+            Select Case index
+                Case 1
+                    Assert.AreEqual(x.Name, "id")
+                    Assert.IsInstanceOfType(x.Value, GetType(Integer))
+                Case 2
+                    Assert.AreEqual(x.Name, "Title")
+                    Assert.IsInstanceOfType(x.Value, GetType(String))
+                Case 3
+                    Assert.AreEqual(x.Name, "ReleaseDate")
+                    Assert.IsInstanceOfType(x.Value, GetType(DateTime))
+                Case Else
+                    Exit Select
+            End Select
+
+            index += 1
+        Next
 
     End Sub
 

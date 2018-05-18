@@ -11,7 +11,7 @@ namespace ADODB
         //For future update
         public System.Data.IDbConnection innerConnection { get; private set; }
 
-        public string Provider { get; set; }
+        //public string Provider { get; set; }
 
         public void Open(string stringConnection)
         {
